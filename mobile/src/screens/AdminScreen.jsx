@@ -12,8 +12,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { apiClient, getFriendlyErrorMessage } from '../api/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const AdminScreen = () => {
+export const AdminScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('overview'); // overview, logistics, diagnoses, market
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -157,6 +158,21 @@ export const AdminScreen = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('@bfarm_auth_token');
+      await AsyncStorage.removeItem('@bfarm_role');
+      await AsyncStorage.removeItem('@bfarm_user_info');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.href = '/index.html';
+      } else if (navigation) {
+        navigation.replace('Login');
+      }
+    } catch (e) {
+      console.warn('Logout error:', e);
+    }
+  };
+
   return (
     <ScrollView
       style={styles.wrapper}
@@ -167,9 +183,9 @@ export const AdminScreen = () => {
       <View style={styles.headerCard}>
         <View style={styles.badgeRow}>
           <Text style={styles.adminBadge}>🛡️ SYSTEM ADMIN COMMAND CENTER</Text>
-          <View style={styles.liveTag}>
-            <Text style={styles.liveTagText}>● SYSTEM ACTIVE</Text>
-          </View>
+          <TouchableOpacity style={styles.topLogoutBtn} onPress={handleLogout}>
+            <Text style={styles.topLogoutText}>🚪 Sign Out</Text>
+          </TouchableOpacity>
         </View>
         <Text style={styles.headerTitle}>AgriCare Telemetry & Operations</Text>
         <Text style={styles.headerSub}>
@@ -454,6 +470,10 @@ export const AdminScreen = () => {
         <TouchableOpacity style={styles.webDashboardBtn} onPress={openFullWebDashboard}>
           <Text style={styles.webDashboardText}>🖥️ Open Desktop Web Command Center →</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+          <Text style={styles.logoutBtnText}>🚪 Sign Out / Switch User</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -544,4 +564,9 @@ const styles = StyleSheet.create({
   reseedBtnText: { color: '#1d4ed8', fontWeight: '800', fontSize: 13 },
   webDashboardBtn: { backgroundColor: '#0f172a', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
   webDashboardText: { color: '#ffffff', fontWeight: '800', fontSize: 14 },
+
+  topLogoutBtn: { backgroundColor: '#ef4444', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  topLogoutText: { fontSize: 11, fontWeight: '800', color: '#ffffff' },
+  logoutBtn: { backgroundColor: '#fee2e2', borderWidth: 1.5, borderColor: '#fca5a5', paddingVertical: 13, borderRadius: 12, alignItems: 'center' },
+  logoutBtnText: { color: '#b91c1c', fontSize: 14, fontWeight: '800' },
 });
