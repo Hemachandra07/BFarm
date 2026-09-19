@@ -17,10 +17,54 @@ export const AdminScreen = () => {
   const [activeTab, setActiveTab] = useState('overview'); // overview, logistics, diagnoses, market
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState(null);
-  const [logisticsRequests, setLogisticsRequests] = useState([]);
-  const [diagnosisFeed, setDiagnosisFeed] = useState([]);
-  const [mandiPrices, setMandiPrices] = useState([]);
+  const [newCrop, setNewCrop] = useState('Tomato');
+  const [newMarket, setNewMarket] = useState('Guntur APMC Mandi');
+  const [newDistrict, setNewDistrict] = useState('Guntur');
+  const [newPrice, setNewPrice] = useState('2850');
+  const [newTrend, setNewTrend] = useState('UP');
+
+  const handleAddMarketPrice = async () => {
+    if (!newCrop || !newMarket || !newPrice) {
+      const msg = 'Please fill crop name, market name, and price.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Missing Fields', msg);
+      return;
+    }
+    try {
+      const res = await apiClient.post('/market/prices', {
+        crop: newCrop.trim(),
+        market: newMarket.trim(),
+        district: newDistrict.trim() || 'Guntur',
+        state: 'Andhra Pradesh',
+        price: parseFloat(newPrice),
+        unit: 'quintal',
+        trend: newTrend,
+        source: 'Admin Official Update',
+      });
+      if (res.data?.success) {
+        const msg = `Market price for ${newCrop} at ${newMarket} added successfully!`;
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Success', msg);
+        setNewPrice('');
+        loadData();
+      }
+    } catch (err) {
+      const msg = getFriendlyErrorMessage(err);
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Error', msg);
+    }
+  };
+
+  const handleDeleteMarketPrice = async (id, crop) => {
+    try {
+      const res = await apiClient.delete(`/market/prices/${id}`);
+      if (res.data?.success) {
+        loadData();
+      }
+    } catch (err) {
+      console.warn('Failed to delete market price:', err);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -306,16 +350,93 @@ export const AdminScreen = () => {
       {/* 4. MANDI RATES TAB */}
       {activeTab === 'market' && (
         <View style={styles.sectionGap}>
-          <Text style={styles.sectionTitle}>💰 Mandi Rates Telemetry</Text>
+          {/* Form to Add / Update Market Price */}
+          <View style={styles.addPriceCard}>
+            <Text style={styles.addPriceTitle}>➕ Add / Update Mandi Price (Admin)</Text>
+            <Text style={styles.addPriceDesc}>
+              Newly added market prices will immediately reflect in the Farmer Module for all users.
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Crop Name</Text>
+              <TextInput
+                style={styles.formInput}
+                value={newCrop}
+                onChangeText={setNewCrop}
+                placeholder="e.g. Tomato, Chilli, Rice, Cotton"
+              />
+            </View>
+
+            <View style={styles.formRow}>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Market / Mandi Name</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={newMarket}
+                  onChangeText={setNewMarket}
+                  placeholder="e.g. Guntur APMC Yard"
+                />
+              </View>
+
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>District</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={newDistrict}
+                  onChangeText={setNewDistrict}
+                  placeholder="e.g. Guntur"
+                />
+              </View>
+            </View>
+
+            <View style={styles.formRow}>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Price (₹ / quintal)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={newPrice}
+                  onChangeText={setNewPrice}
+                  keyboardType="numeric"
+                  placeholder="e.g. 2850"
+                />
+              </View>
+
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>Price Trend</Text>
+                <View style={styles.trendRow}>
+                  {['UP', 'STABLE', 'DOWN'].map((tr) => (
+                    <TouchableOpacity
+                      key={tr}
+                      style={[styles.trendPill, newTrend === tr && styles.trendPillActive]}
+                      onPress={() => setNewTrend(tr)}
+                    >
+                      <Text style={[styles.trendPillText, newTrend === tr && styles.trendPillTextActive]}>
+                        {tr === 'UP' ? '▲ UP' : (tr === 'DOWN' ? '▼ DOWN' : '— STABLE')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.submitPriceBtn} onPress={handleAddMarketPrice}>
+              <Text style={styles.submitPriceBtnText}>✨ Publish Market Price to Farmer Module</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.sectionTitle}>💰 Active Mandi Benchmark Rates ({mandiPrices.length})</Text>
           {mandiPrices.map((p) => (
             <View key={p.id} style={styles.cardRow}>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.mandiName}>{p.market}</Text>
-                <Text style={styles.mandiSub}>{p.crop} • {p.district}, {p.state}</Text>
+                <Text style={styles.mandiSub}>{p.crop} • {p.district}, {p.state} • Source: {p.source || 'Admin'}</Text>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
+              <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 <Text style={styles.mandiPrice}>₹{p.price}</Text>
                 <Text style={styles.mandiUnit}>/ {p.unit}</Text>
+                <TouchableOpacity onPress={() => handleDeleteMarketPrice(p.id, p.crop)}>
+                  <Text style={{ fontSize: 10, color: '#dc2626', fontWeight: '800' }}>🗑️ Delete</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ))}
@@ -402,6 +523,21 @@ const styles = StyleSheet.create({
   emptyText: { color: '#64748b', textAlign: 'center', marginVertical: 10 },
   confidenceBadge: { backgroundColor: '#dcfce7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   confidenceText: { fontSize: 11, fontWeight: '800', color: '#15803d' },
+
+  addPriceCard: { backgroundColor: '#ffffff', borderRadius: 18, padding: 18, borderWidth: 1.5, borderColor: '#bbf7d0', gap: 10 },
+  addPriceTitle: { fontSize: 16, fontWeight: '900', color: '#15803d' },
+  addPriceDesc: { fontSize: 12, color: '#64748b', marginBottom: 4 },
+  formRow: { flexDirection: 'row', gap: 10 },
+  formInput: { borderWidth: 1.5, borderColor: '#cbd5e1', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: '#0f172a', backgroundColor: '#f8fafc' },
+  label: { fontSize: 11, fontWeight: '800', color: '#475569', marginBottom: 2 },
+  inputGroup: { gap: 2 },
+  trendRow: { flexDirection: 'row', gap: 4, marginTop: 2 },
+  trendPill: { flex: 1, backgroundColor: '#f1f5f9', paddingVertical: 6, paddingHorizontal: 4, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1' },
+  trendPillActive: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
+  trendPillText: { fontSize: 10, fontWeight: '800', color: '#475569' },
+  trendPillTextActive: { color: '#ffffff' },
+  submitPriceBtn: { backgroundColor: '#16a34a', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginTop: 6 },
+  submitPriceBtnText: { color: '#ffffff', fontSize: 14, fontWeight: '800' },
 
   adminActionsCard: { backgroundColor: '#ffffff', borderRadius: 18, padding: 18, borderWidth: 1, borderColor: '#e2e8f0', gap: 10, marginTop: 10 },
   reseedBtn: { backgroundColor: '#eff6ff', paddingVertical: 12, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: '#bfdbfe' },

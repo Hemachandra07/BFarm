@@ -46,4 +46,33 @@ public class MarketController {
             @RequestParam(defaultValue = "500") Double quantityKg) {
         return ResponseEntity.ok(ApiResponse.ok(marketService.compareOptions(crop, quantityKg)));
     }
+
+    @PostMapping("/prices")
+    @Operation(summary = "Add or update a market price record (Admin)")
+    public ResponseEntity<ApiResponse<MarketPrice>> addMarketPrice(@RequestBody MarketPrice marketPrice) {
+        if (marketPrice.getDate() == null) {
+            marketPrice.setDate(java.time.LocalDate.now());
+        }
+        if (marketPrice.getUnit() == null || marketPrice.getUnit().isBlank()) {
+            marketPrice.setUnit("quintal");
+        }
+        if (marketPrice.getState() == null || marketPrice.getState().isBlank()) {
+            marketPrice.setState("Andhra Pradesh");
+        }
+        if (marketPrice.getTrend() == null || marketPrice.getTrend().isBlank()) {
+            marketPrice.setTrend("UP");
+        }
+        if (marketPrice.getSource() == null || marketPrice.getSource().isBlank()) {
+            marketPrice.setSource("Admin Official Update");
+        }
+        MarketPrice saved = marketPriceRepository.save(marketPrice);
+        return ResponseEntity.ok(ApiResponse.ok("Market price added successfully", saved));
+    }
+
+    @DeleteMapping("/prices/{id}")
+    @Operation(summary = "Delete a market price record (Admin)")
+    public ResponseEntity<ApiResponse<String>> deleteMarketPrice(@PathVariable Long id) {
+        marketPriceRepository.deleteById(id);
+        return ResponseEntity.ok(ApiResponse.ok("Market price deleted successfully", "DELETED"));
+    }
 }
