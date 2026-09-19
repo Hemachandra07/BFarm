@@ -32,6 +32,10 @@ export const LoginScreen = ({ navigation }) => {
         await AsyncStorage.setItem('@bfarm_auth_token', authData.token);
         await AsyncStorage.setItem('@bfarm_role', authData.role);
         await AsyncStorage.setItem('@bfarm_user_info', JSON.stringify(authData));
+        if (authData.role === 'ADMIN' && Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.location.href = '/admin/index.html';
+          return;
+        }
         navigation.replace('MainTabs');
       } else {
         setErrorMessage(res.data?.message || 'Login failed.');
@@ -52,6 +56,10 @@ export const LoginScreen = ({ navigation }) => {
         await AsyncStorage.setItem('@bfarm_auth_token', 'mock-token');
         await AsyncStorage.setItem('@bfarm_role', user.role);
         await AsyncStorage.setItem('@bfarm_user_info', JSON.stringify(user));
+        if (user.role === 'ADMIN' && Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.location.href = '/admin/index.html';
+          return;
+        }
         navigation.replace('MainTabs');
         return;
       }

@@ -33,6 +33,7 @@ import { BrowseProduceScreen } from '../screens/BrowseProduceScreen';
 import { BuyerOrdersScreen } from '../screens/BuyerOrdersScreen';
 import { StorageProviderScreen } from '../screens/StorageProviderScreen';
 import { LogisticsProviderScreen } from '../screens/LogisticsProviderScreen';
+import { AdminScreen } from '../screens/AdminScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -79,6 +80,38 @@ const MainTabNavigator = () => {
       fontWeight: '700',
     },
   };
+
+  // Admin Operations Tabs
+  if (role === 'ADMIN') {
+    return (
+      <Tab.Navigator screenOptions={tabScreenOptions}>
+        <Tab.Screen
+          name="AdminTab"
+          component={AdminScreen}
+          options={{
+            tabBarLabel: 'Admin Control',
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>🛡️</Text>,
+          }}
+        />
+        <Tab.Screen
+          name="MarketTab"
+          component={MarketScreen}
+          options={{
+            tabBarLabel: t('market') || 'Mandi Rates',
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>💰</Text>,
+          }}
+        />
+        <Tab.Screen
+          name="ProfileTab"
+          component={ProfileScreen}
+          options={{
+            tabBarLabel: t('profile') || 'Profile',
+            tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text>,
+          }}
+        />
+      </Tab.Navigator>
+    );
+  }
 
   // Buyer & FPO Tabs
   if (role === 'BUYER' || role === 'FPO') {
