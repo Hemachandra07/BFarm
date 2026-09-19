@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # 1. MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: bfarm-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-bfarm_db}
+      MYSQL_USER: ${DB_USERNAME:-bfarm_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-bfarm_pass}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bfarm-net
+
+  # 2. Python FastAPI AI Service
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: bfarm-ai-service
+    restart: always
+    environment:
+      - AI_SERVICE_MODE=demo
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bfarm-net
+
+  # 3. Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bfarm-backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-bfarm_db}
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      AI_SERVICE_URL: http://ai-service:8000/predict
+      JWT_SECRET: ${JWT_SECRET:-BFarmSuperSecretAgriculturalTokensKeyForFarmersAndAdmins2026Secure!}
+    ports:
+      - "8080:8080"
+    networks:
+      - bfarm-net
+
+networks:
+  bfarm-net:
+    driver: bridge
+
+volumes:
+  mysql_data:

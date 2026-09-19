@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BFarm — Agricultural Admin Command Center</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-badge">🌾</div>
+        <div class="brand-text">
+          <h2>BFarm</h2>
+          <span>Admin Command Center</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-btn active" onclick="switchTab('overview')">
+          <span class="icon">📊</span> Overview & KPIs
+        </button>
+        <button class="nav-btn" onclick="switchTab('logistics')">
+          <span class="icon">🚚</span> Logistics Requests
+        </button>
+        <button class="nav-btn" onclick="switchTab('diagnoses')">
+          <span class="icon">🌿</span> Diagnosis Feed
+        </button>
+        <button class="nav-btn" onclick="switchTab('market')">
+          <span class="icon">💰</span> Mandi Market Prices
+        </button>
+        <button class="nav-btn" onclick="switchTab('buyers')">
+          <span class="icon">🤝</span> Buyers & FPOs
+        </button>
+        <button class="nav-btn" onclick="switchTab('storage')">
+          <span class="icon">❄️</span> Cold Storage Hubs
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="/swagger-ui/index.html" target="_blank" class="api-docs-link">
+          📘 Swagger REST Docs
+        </a>
+        <button class="reseed-btn" onclick="triggerReseed()">
+          🔄 Re-seed Demo Data
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="page-title">
+          <h1 id="tabTitle">Executive Overview</h1>
+          <p id="tabDesc">Real-time agricultural telemetry, crop disease scans, and market operations</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="live-pill">
+            <span class="status-dot"></span> System Live & Connected
+          </div>
+          <button class="refresh-btn" onclick="refreshCurrentTab()">↻ Refresh</button>
+        </div>
+      </header>
+
+      <!-- TAB 1: OVERVIEW & KPIS -->
+      <section id="tab-overview" class="tab-pane active">
+        <!-- 7 KPI Metric Cards as requested -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon green">👨‍🌾</div>
+            <div class="stat-info">
+              <span class="stat-label">Total Farmers</span>
+              <h3 id="statTotalFarmers">1,245</h3>
+              <span class="stat-trend positive">↑ 12% this week</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon emerald">🔬</div>
+            <div class="stat-info">
+              <span class="stat-label">Diagnoses Scanned</span>
+              <h3 id="statTotalDiagnoses">3,821</h3>
+              <span class="stat-trend positive">↑ High accuracy (94%)</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon amber">🍅</div>
+            <div class="stat-info">
+              <span class="stat-label">Top Scanned Crop</span>
+              <h3 id="statTopCrop">Tomato</h3>
+              <span class="stat-trend neutral">48% of total volume</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon red">⚠️</div>
+            <div class="stat-info">
+              <span class="stat-label">Top Problem Disease</span>
+              <h3 id="statTopDisease">Early Blight</h3>
+              <span class="stat-trend alert">Fungal lesion warning</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon blue">📈</div>
+            <div class="stat-info">
+              <span class="stat-label">Market Price Searches</span>
+              <h3 id="statMarketSearches">2,430</h3>
+              <span class="stat-trend positive">Live APMC sync</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon cyan">❄️</div>
+            <div class="stat-info">
+              <span class="stat-label">Cold Storage Requests</span>
+              <h3 id="statStorageRequests">183</h3>
+              <span class="stat-trend neutral">Capacity tracking active</span>
+            </div>
+          </div>
+
+          <div class="stat-card highlight">
+            <div class="stat-icon purple">🚚</div>
+            <div class="stat-info">
+              <span class="stat-label">Logistics Bookings</span>
+              <h3 id="statLogisticsRequests">124</h3>
+              <span class="stat-trend positive">Real-time dispatch</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activities Split -->
+        <div class="split-grid">
+          <div class="content-card">
+            <div class="card-header">
+              <h3>Recent Field Diagnoses</h3>
+              <span class="badge">Live AI Scans</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Crop</th>
+                    <th>Identified Disease</th>
+                    <th>Confidence</th>
+                    <th>Severity</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="recentDiagnosesBody">
+                  <tr><td colspan="5" class="loading">Loading diagnosis telemetry...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="card-header">
+              <h3>Active Transport Requests</h3>
+              <span class="badge">Dispatch Status</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>Crop</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="recentLogisticsBody">
+                  <tr><td colspan="4" class="loading">Loading transport bookings...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: LOGISTICS REQUESTS -->
+      <section id="tab-logistics" class="tab-pane">
+        <div class="content-card">
+          <div class="card-header">
+            <div>
+              <h3>All Logistics & Transport Bookings</h3>
+              <p class="card-sub">Manage farm-to-storage and farm-to-market dispatch statuses</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ref Number</th>
+                  <th>Crop</th>
+                  <th>Quantity</th>
+                  <th>Pickup</th>
+                  <th>Destination</th>
+                  <th>Est. Cost</th>
+                  <th>Current Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="allLogisticsBody">
+                <tr><td colspan="8" class="loading">Loading requests...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: DIAGNOSIS FEED -->
+      <section id="tab-diagnoses" class="tab-pane">
+        <div class="content-card">
+          <div class="card-header">
+            <div>
+              <h3>Crop Pathology & AI Diagnostics Feed</h3>
+              <p class="card-sub">Historical crop disease detections and confidence scores</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Crop</th>
+                  <th>Disease</th>
+                  <th>Confidence</th>
+                  <th>Severity</th>
+                  <th>Findings</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="diagnosesFeedBody">
+                <tr><td colspan="7" class="loading">Loading diagnosis history...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: MANDI MARKET PRICES -->
+      <section id="tab-market" class="tab-pane">
+        <div class="content-card">
+          <div class="card-header">
+            <div>
+              <h3>Mandi & APMC Market Price Registry</h3>
+              <p class="card-sub">Current benchmark prices across Guntur, Vijayawada, Ongole, Kurnool, and Hyderabad</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Crop</th>
+                  <th>Market Yard</th>
+                  <th>District / State</th>
+                  <th>Price (INR)</th>
+                  <th>Unit</th>
+                  <th>Trend</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody id="marketPricesBody">
+                <tr><td colspan="7" class="loading">Loading mandi prices...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: BUYERS & FPOS -->
+      <section id="tab-buyers" class="tab-pane">
+        <div class="split-grid">
+          <div class="content-card">
+            <div class="card-header">
+              <h3>Verified Direct Buyers</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Buyer Name</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Crops</th>
+                    <th>Offered Rate</th>
+                    <th>Phone</th>
+                  </tr>
+                </thead>
+                <tbody id="buyersBody">
+                  <tr><td colspan="6" class="loading">Loading buyers...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="card-header">
+              <h3>Farmer Producer Organizations (FPOs)</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>FPO Name</th>
+                    <th>Location</th>
+                    <th>Members</th>
+                    <th>Crops Handled</th>
+                    <th>Phone</th>
+                  </tr>
+                </thead>
+                <tbody id="fposBody">
+                  <tr><td colspan="5" class="loading">Loading FPOs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: COLD STORAGE HUBS -->
+      <section id="tab-storage" class="tab-pane">
+        <div class="content-card">
+          <div class="card-header">
+            <div>
+              <h3>Cold Storage & Warehousing Facilities</h3>
+              <p class="card-sub">Available capacity and daily storage rates for perishable produce</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Facility Name</th>
+                  <th>Location</th>
+                  <th>Total Cap.</th>
+                  <th>Available Cap.</th>
+                  <th>Supported Crops</th>
+                  <th>Rate</th>
+                  <th>Contact</th>
+                </tr>
+              </thead>
+              <tbody id="coldStorageBody">
+                <tr><td colspan="7" class="loading">Loading storage facilities...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
